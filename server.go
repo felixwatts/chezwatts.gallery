@@ -16,7 +16,15 @@ import (
 	"strconv"
 )
 
+const portHttp = 8081
+const portHttps = 8443
+
+const httpsRedirectRoot = "https://chezwatts.gallery:443"
+
 const fileSystemRoot = "/var/www/chezwatts.gallery/"
+
+const httpsCertificate = "/etc/letsencrypt/live/chezwatts.gallery/fullchain.pem"
+const httpsPrivateKey = "/etc/letsencrypt/live/chezwatts.gallery/privkey.pem"
 
 var templates = make(map[string]*template.Template)
 var hitCountByPage = make(map[string]int)
@@ -28,15 +36,24 @@ func main() {
 
 	restoreStats()
 
-	http.HandleFunc("/favicon.ico", faviconHandler)
-	http.HandleFunc("/", indexHandler)
-	http.HandleFunc("/gallery/", galleryHandler)
-	http.HandleFunc("/stats", statsHandler)
-	http.Handle("/galleries/", http.StripPrefix("/galleries/", http.FileServer(http.Dir(fileSystemRoot + "galleries"))))
-	http.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir(fileSystemRoot + "js"))))
-	http.Handle("/img/", http.StripPrefix("/img/", http.FileServer(http.Dir(fileSystemRoot + "img"))))
-	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir(fileSystemRoot + "css"))))
-	log.Fatal(http.ListenAndServe(":8081", nil))
+	httpsMux := http.NewServeMux()
+
+	httpsMux.HandleFunc("/favicon.ico", faviconHandler)
+	httpsMux.HandleFunc("/", indexHandler)
+	httpsMux.HandleFunc("/gallery/", galleryHandler)
+	httpsMux.HandleFunc("/stats", statsHandler)
+	httpsMux.Handle("/galleries/", http.StripPrefix("/galleries/", http.FileServer(http.Dir(fileSystemRoot + "galleries"))))
+	httpsMux.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir(fileSystemRoot + "js"))))
+	httpsMux.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir(fileSystemRoot + "css"))))
+
+	httpMux := http.NewServeMux()
+
+	httpMux.Handle("/.well-known/acme-challenge/", http.StripPrefix("/.well-known/acme-challenge/", http.FileServer(http.Dir(fileSystemRoot + ".well-known/acme-challenge"))))
+	httpMux.Handle("/img/", http.StripPrefix("/img/", http.FileServer(http.Dir(fileSystemRoot + "img"))))
+	httpMux.HandleFunc("/", redirectToHttpsHandler)
+
+	go http.ListenAndServe(":" + strconv.Itoa(portHttp), httpMux)
+	log.Fatal(http.ListenAndServeTLS(":" + strconv.Itoa(portHttps), httpsCertificate, httpsPrivateKey, httpsMux))
 }
 
 func init() {
@@ -56,6 +73,10 @@ func init() {
 	}
 
 	templates["stats_csv"] = t
+}
+
+func redirectToHttpsHandler(w http.ResponseWriter, r *http.Request) {
+    http.Redirect(w, r, httpsRedirectRoot + r.RequestURI, http.StatusMovedPermanently)
 }
 
 func saveStats() {
