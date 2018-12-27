@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
 	"github.com/russross/blackfriday"
 	"html/template"
@@ -8,12 +9,11 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"path"
-	"sync"
-	"sort"
 	"os"
-	"encoding/csv"
+	"path"
+	"sort"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -43,18 +43,18 @@ func main() {
 	httpsMux.HandleFunc("/", indexHandler)
 	httpsMux.HandleFunc("/gallery/", galleryHandler)
 	httpsMux.HandleFunc("/stats", statsHandler)
-	httpsMux.Handle("/galleries/", http.StripPrefix("/galleries/", http.FileServer(http.Dir(fileSystemRoot + "galleries"))))
-	httpsMux.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir(fileSystemRoot + "js"))))
-	httpsMux.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir(fileSystemRoot + "css"))))
+	httpsMux.Handle("/galleries/", http.StripPrefix("/galleries/", http.FileServer(http.Dir(fileSystemRoot+"galleries"))))
+	httpsMux.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir(fileSystemRoot+"js"))))
+	httpsMux.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir(fileSystemRoot+"css"))))
 
 	httpMux := http.NewServeMux()
 
-	httpMux.Handle("/.well-known/acme-challenge/", http.StripPrefix("/.well-known/acme-challenge/", http.FileServer(http.Dir(fileSystemRoot + ".well-known/acme-challenge"))))
-	httpMux.Handle("/img/", http.StripPrefix("/img/", http.FileServer(http.Dir(fileSystemRoot + "img"))))
+	httpMux.Handle("/.well-known/acme-challenge/", http.StripPrefix("/.well-known/acme-challenge/", http.FileServer(http.Dir(fileSystemRoot+".well-known/acme-challenge"))))
+	httpMux.Handle("/img/", http.StripPrefix("/img/", http.FileServer(http.Dir(fileSystemRoot+"img"))))
 	httpMux.HandleFunc("/", redirectToHttpsHandler)
 
-	go http.ListenAndServe(":" + strconv.Itoa(portHttp), logAndDelegate(httpMux))
-	log.Fatal(http.ListenAndServeTLS(":" + strconv.Itoa(portHttps), httpsCertificate, httpsPrivateKey, logAndDelegate(httpsMux)))
+	go http.ListenAndServe(":"+strconv.Itoa(portHttp), logAndDelegate(httpMux))
+	log.Fatal(http.ListenAndServeTLS(":"+strconv.Itoa(portHttps), httpsCertificate, httpsPrivateKey, logAndDelegate(httpsMux)))
 }
 
 func init() {
@@ -77,14 +77,14 @@ func init() {
 }
 
 func logAndDelegate(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println(time.Now(), r.Method, r.URL.Path, r.RemoteAddr, r.Referer(), r.UserAgent())
 		handler.ServeHTTP(w, r)
 	})
 }
 
 func redirectToHttpsHandler(w http.ResponseWriter, r *http.Request) {
-    http.Redirect(w, r, httpsRedirectRoot + r.RequestURI, http.StatusMovedPermanently)
+	http.Redirect(w, r, httpsRedirectRoot+r.RequestURI, http.StatusMovedPermanently)
 }
 
 func saveStats() {
@@ -113,10 +113,10 @@ func restoreStats() {
 		panic(err)
 	}
 
-	for _, row := range(records) {
+	for _, row := range records {
 		page := row[0]
 		count, err := strconv.Atoi(row[1])
-		if(err != nil) {
+		if err != nil {
 			panic(err)
 		}
 		hitCountByPage[page] = count
@@ -169,7 +169,7 @@ func galleryHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getGalleryBlurb(gallery string) template.HTML {
-	filename := fmt.Sprintf(fileSystemRoot + "galleries/%v/blurb.markdown", gallery)
+	filename := fmt.Sprintf(fileSystemRoot+"galleries/%v/blurb.markdown", gallery)
 	return getBlurb(filename)
 }
 
@@ -227,7 +227,7 @@ func getGalleries() []galleryLinkViewModel {
 func getImages(gallery string) []string {
 
 	result := make([]string, 0)
-	dir := path.Join(fileSystemRoot + "galleries", gallery)
+	dir := path.Join(fileSystemRoot+"galleries", gallery)
 	infos, err := ioutil.ReadDir(dir)
 	if err != nil {
 		log.Println(err)
@@ -252,7 +252,7 @@ func renderTemplate(tmpl string, model interface{}, w http.ResponseWriter) {
 }
 
 type pageHitCountViewModel struct {
-	Page string
+	Page     string
 	HitCount int
 }
 
@@ -278,8 +278,8 @@ func getStatsPageViewModel() statsPageViewModel {
 
 	result := make([]pageHitCountViewModel, 0)
 	for page, hitCount := range hitCountByPage {
-		pageHitCount := pageHitCountViewModel {
-			Page: page,
+		pageHitCount := pageHitCountViewModel{
+			Page:     page,
 			HitCount: hitCount,
 		}
 		result = append(result, pageHitCount)
@@ -287,12 +287,13 @@ func getStatsPageViewModel() statsPageViewModel {
 
 	sort.Sort(ByHits(result))
 
-	return statsPageViewModel {
+	return statsPageViewModel{
 		PageHitCounts: result,
 	}
 }
 
 type ByHits []pageHitCountViewModel
+
 func (a ByHits) Len() int           { return len(a) }
 func (a ByHits) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByHits) Less(i, j int) bool { return a[i].HitCount > a[j].HitCount }
