@@ -14,7 +14,6 @@ import (
 	"sort"
 	"strconv"
 	"sync"
-	"time"
 )
 
 const portHttp = 8081
@@ -78,7 +77,7 @@ func init() {
 
 func logAndDelegate(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println(time.Now(), r.Method, r.URL.Path, r.RemoteAddr, r.Referer(), r.UserAgent())
+		log.Println(r.Method, r.URL.Path, r.RemoteAddr, r.Referer(), r.UserAgent())
 		handler.ServeHTTP(w, r)
 	})
 }
