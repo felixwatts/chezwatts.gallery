@@ -14,6 +14,7 @@ import (
 	"os"
 	"encoding/csv"
 	"strconv"
+	"time"
 )
 
 const portHttp = 8081
@@ -52,8 +53,8 @@ func main() {
 	httpMux.Handle("/img/", http.StripPrefix("/img/", http.FileServer(http.Dir(fileSystemRoot + "img"))))
 	httpMux.HandleFunc("/", redirectToHttpsHandler)
 
-	go http.ListenAndServe(":" + strconv.Itoa(portHttp), httpMux)
-	log.Fatal(http.ListenAndServeTLS(":" + strconv.Itoa(portHttps), httpsCertificate, httpsPrivateKey, httpsMux))
+	go http.ListenAndServe(":" + strconv.Itoa(portHttp), logAndDelegate(httpMux))
+	log.Fatal(http.ListenAndServeTLS(":" + strconv.Itoa(portHttps), httpsCertificate, httpsPrivateKey, logAndDelegate(httpsMux)))
 }
 
 func init() {
@@ -73,6 +74,13 @@ func init() {
 	}
 
 	templates["stats_csv"] = t
+}
+
+func logAndDelegate(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+		log.Println(time.Now(), r.Method, r.URL.Path, r.RemoteAddr, r.Referer(), r.UserAgent())
+		handler.ServeHTTP(w, r)
+	})
 }
 
 func redirectToHttpsHandler(w http.ResponseWriter, r *http.Request) {
@@ -99,7 +107,7 @@ func restoreStats() {
 		panic(err)
 	}
 	r := csv.NewReader(f)
-	
+
 	records, err := r.ReadAll()
 	if err != nil {
 		panic(err)
@@ -236,7 +244,7 @@ func getImages(gallery string) []string {
 }
 
 func renderTemplate(tmpl string, model interface{}, w http.ResponseWriter) {
-	
+
 	err := templates[tmpl].Execute(w, model)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -255,13 +263,13 @@ type statsPageViewModel struct {
 func incrementHitCount(page string) {
 	hitCountModifyLock.Lock()
 	defer saveStats()
-	defer hitCountModifyLock.Unlock()	
+	defer hitCountModifyLock.Unlock()
 
 	hitCount := hitCountByPage[page]
 	hitCountByPage[page] = hitCount + 1
 
 	totalHitCount := hitCountByPage["total"]
-	hitCountByPage["total"] = totalHitCount + 1	
+	hitCountByPage["total"] = totalHitCount + 1
 }
 
 func getStatsPageViewModel() statsPageViewModel {
