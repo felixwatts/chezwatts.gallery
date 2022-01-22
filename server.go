@@ -20,8 +20,7 @@ import (
 
 const portHttp = 8200
 
-// const fileSystemRoot = "/var/www/chezwatts.gallery/"
-const fileSystemRoot = "/home/felix/code/go/chezwatts.gallery/"
+const fileSystemRoot = "/home/ubuntu/data/go/chezwatts.gallery/"
 
 var templates = make(map[string]*template.Template)
 var hitCountByPage = make(map[string]int)
