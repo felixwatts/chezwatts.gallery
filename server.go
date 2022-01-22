@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/russross/blackfriday"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -14,17 +13,15 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"time"
+
+	"github.com/russross/blackfriday"
 )
 
-const portHttp = 8081
-const portHttps = 8443
+const portHttp = 8200
 
-const httpsRedirectRoot = "https://chezwatts.gallery:443"
-
-const fileSystemRoot = "/var/www/chezwatts.gallery/"
-
-const httpsCertificate = "/etc/letsencrypt/live/chezwatts.gallery/fullchain.pem"
-const httpsPrivateKey = "/etc/letsencrypt/live/chezwatts.gallery/privkey.pem"
+// const fileSystemRoot = "/var/www/chezwatts.gallery/"
+const fileSystemRoot = "/home/felix/code/go/chezwatts.gallery/"
 
 var templates = make(map[string]*template.Template)
 var hitCountByPage = make(map[string]int)
@@ -36,24 +33,20 @@ func main() {
 
 	restoreStats()
 
-	httpsMux := http.NewServeMux()
-
-	httpsMux.HandleFunc("/favicon.ico", faviconHandler)
-	httpsMux.HandleFunc("/", indexHandler)
-	httpsMux.HandleFunc("/gallery/", galleryHandler)
-	httpsMux.HandleFunc("/stats", statsHandler)
-	httpsMux.Handle("/galleries/", http.StripPrefix("/galleries/", http.FileServer(http.Dir(fileSystemRoot+"galleries"))))
-	httpsMux.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir(fileSystemRoot+"js"))))
-	httpsMux.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir(fileSystemRoot+"css"))))
-
 	httpMux := http.NewServeMux()
 
-	httpMux.Handle("/.well-known/acme-challenge/", http.StripPrefix("/.well-known/acme-challenge/", http.FileServer(http.Dir(fileSystemRoot+".well-known/acme-challenge"))))
+	httpMux.HandleFunc("/favicon.ico", faviconHandler)
+	httpMux.HandleFunc("/", indexHandler)
+	httpMux.HandleFunc("/gallery/", galleryHandler)
+	httpMux.HandleFunc("/stats", statsHandler)
+	httpMux.Handle("/galleries/", http.StripPrefix("/galleries/", http.FileServer(http.Dir(fileSystemRoot+"galleries"))))
+	httpMux.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir(fileSystemRoot+"js"))))
+	httpMux.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir(fileSystemRoot+"css"))))
 	httpMux.Handle("/img/", http.StripPrefix("/img/", http.FileServer(http.Dir(fileSystemRoot+"img"))))
-	httpMux.HandleFunc("/", redirectToHttpsHandler)
 
-	go http.ListenAndServe(":"+strconv.Itoa(portHttp), logAndDelegate(httpMux))
-	log.Fatal(http.ListenAndServeTLS(":"+strconv.Itoa(portHttps), httpsCertificate, httpsPrivateKey, logAndDelegate(httpsMux)))
+	go updateStatsLogDaily()
+
+	http.ListenAndServe(":"+strconv.Itoa(portHttp), logAndDelegate(httpMux))
 }
 
 func init() {
@@ -75,15 +68,111 @@ func init() {
 	templates["stats_csv"] = t
 }
 
+func updateStatsLogDaily() {
+	c := time.Tick(24 * time.Hour)
+	for range c {
+		updateStatsLog()
+	}
+}
+
+func updateStatsLog() {
+	hitCountModifyLock.Lock()
+	defer hitCountModifyLock.Unlock()
+
+	records := make([][]string, 0)
+
+	filename := fileSystemRoot + "stats_log.csv"
+
+	f, err := os.Open(filename)
+
+	if err != nil {
+		if os.IsNotExist(err) {
+			// if stats log file doesn't exist then
+			// records isminimal header row and no record rows
+			headerRow := []string{"Date"}
+			records = append(records, headerRow)
+		} else {
+			log.Fatal(err)
+		}
+	} else {
+		// if stats log file exists
+		defer f.Close()
+
+		// records = read stats log file
+		r := csv.NewReader(f)
+		records2, err := r.ReadAll()
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			records = records2
+		}
+	}
+
+	// create new empty record with current date
+	headerRow := records[0]
+	numCols := len(headerRow)
+	newRecord := make([]string, numCols)
+	newRecord[0] = fmt.Sprint(time.Now().Date())
+
+	// for each gallery in stats
+	stats := getStatsPageViewModel()
+
+	for _, gallery := range stats.PageHitCounts {
+
+		columnIndex := indexOf(gallery.Page, headerRow)
+		// if not exists as a column in the log
+		if columnIndex < 0 {
+			// append name to header record
+			headerRow = append(headerRow, gallery.Page)
+			records[0] = headerRow
+			newRecord = append(newRecord, "0")
+
+			// append zero to each other record
+			for i := range records {
+				if i == 0 {
+					continue
+				}
+
+				records[i] = append(records[i], "0")
+			}
+
+			columnIndex = len(headerRow) - 1
+		}
+
+		// set correct field of the new record
+		newRecord[columnIndex] = fmt.Sprint(gallery.HitCount)
+	}
+
+	records = append(records, newRecord)
+
+	// overwrite file
+	f.Close()
+	f, err = os.Create(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	writer := csv.NewWriter(f)
+	err = writer.WriteAll(records)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func indexOf(word string, data []string) int {
+	for k, v := range data {
+		if word == v {
+			return k
+		}
+	}
+	return -1
+}
+
 func logAndDelegate(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println(r.Method, r.URL.Path, r.RemoteAddr, r.Referer(), r.UserAgent())
 		handler.ServeHTTP(w, r)
 	})
-}
-
-func redirectToHttpsHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, httpsRedirectRoot+r.RequestURI, http.StatusMovedPermanently)
 }
 
 func saveStats() {
@@ -156,6 +245,14 @@ func galleryHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	exists := getGalleryExists(gallery)
+
+	if !exists {
+		log.Println("Invalid request ignored.")
+		http.Redirect(w, r, "/", 302)
+		return
+	}
+
 	incrementHitCount(gallery)
 
 	g := galleryViewModel{
@@ -198,6 +295,17 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 func statsHandler(w http.ResponseWriter, r *http.Request) {
 	vm := getStatsPageViewModel()
 	renderTemplate("stats", vm, w)
+}
+
+func getGalleryExists(gallery string) bool {
+	dir := path.Join(fileSystemRoot+"galleries", gallery)
+
+	_, err := os.Stat(dir)
+	if os.IsNotExist(err) {
+		return false
+	}
+
+	return true
 }
 
 func getGalleries() []galleryLinkViewModel {
