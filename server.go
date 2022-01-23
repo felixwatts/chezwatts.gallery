@@ -48,7 +48,7 @@ func main() {
 
 	go updateStatsLogDaily()
 
-	http.ListenAndServe(":"+strconv.Itoa(portHttp), logAndDelegate(httpMux))
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(portHttp), logAndDelegate(httpMux)))
 }
 
 func init() {
