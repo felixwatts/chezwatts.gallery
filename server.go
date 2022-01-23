@@ -19,8 +19,8 @@ import (
 )
 
 const portHttp = 8200
-
 const fileSystemRoot = "/home/ubuntu/data/chezwatts.gallery/"
+const statsLogFilename = "stats_log.csv"
 
 var templates = make(map[string]*template.Template)
 var hitCountByPage = make(map[string]int)
@@ -42,6 +42,7 @@ func main() {
 	httpMux.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir(fileSystemRoot+"js"))))
 	httpMux.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir(fileSystemRoot+"css"))))
 	httpMux.Handle("/img/", http.StripPrefix("/img/", http.FileServer(http.Dir(fileSystemRoot+"img"))))
+	httpMux.HandleFunc("/stats-log", statsLogHandler)
 
 	go updateStatsLogDaily()
 
@@ -59,7 +60,7 @@ func init() {
 		templates[tmpl] = t
 	}
 
-	t, err := template.ParseFiles(fileSystemRoot + "stats.csv.tmpl")
+	t, err := template.ParseFiles(fileSystemRoot + statsLogFilename)
 	if err != nil {
 		panic(err)
 	}
@@ -87,7 +88,7 @@ func updateStatsLog() {
 	if err != nil {
 		if os.IsNotExist(err) {
 			// if stats log file doesn't exist then
-			// records isminimal header row and no record rows
+			// records is minimal header row and no record rows
 			headerRow := []string{"Date"}
 			records = append(records, headerRow)
 		} else {
@@ -115,7 +116,6 @@ func updateStatsLog() {
 
 	// for each gallery in stats
 	stats := getStatsPageViewModel()
-
 	for _, gallery := range stats.PageHitCounts {
 
 		columnIndex := indexOf(gallery.Page, headerRow)
@@ -228,6 +228,12 @@ type galleryLinkViewModel struct {
 
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
+}
+
+func statsLogHandler(w http.ResponseWriter, r *http.Request) {
+	hitCountModifyLock.Lock()
+	defer hitCountModifyLock.Unlock()
+	http.ServeFile(w, r, fileSystemRoot+statsLogFilename)
 }
 
 func defaultHandler(w http.ResponseWriter, r *http.Request) {
