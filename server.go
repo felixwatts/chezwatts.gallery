@@ -21,6 +21,8 @@ import (
 const portHttp = 8200
 const fileSystemRoot = "/home/ubuntu/data/chezwatts.gallery/"
 const statsLogFilename = "stats_log.csv"
+const statsFilename = "stats.csv"
+const statsTemplateFilename = "stats.csv.tmpl"
 
 var templates = make(map[string]*template.Template)
 var hitCountByPage = make(map[string]int)
@@ -60,7 +62,7 @@ func init() {
 		templates[tmpl] = t
 	}
 
-	t, err := template.ParseFiles(fileSystemRoot + statsLogFilename)
+	t, err := template.ParseFiles(fileSystemRoot + statsTemplateFilename)
 	if err != nil {
 		panic(err)
 	}
@@ -81,7 +83,7 @@ func updateStatsLog() {
 
 	records := make([][]string, 0)
 
-	filename := fileSystemRoot + "stats_log.csv"
+	filename := fileSystemRoot + statsLogFilename
 
 	f, err := os.Open(filename)
 
@@ -175,7 +177,7 @@ func logAndDelegate(handler http.Handler) http.Handler {
 }
 
 func saveStats() {
-	f, err := os.Create(fileSystemRoot + "stats.csv")
+	f, err := os.Create(fileSystemRoot + statsFilename)
 	if err != nil {
 		panic(err)
 	}
@@ -189,7 +191,7 @@ func saveStats() {
 }
 
 func restoreStats() {
-	f, err := os.Open(fileSystemRoot + "stats.csv")
+	f, err := os.Open(fileSystemRoot + statsFilename)
 	if err != nil {
 		panic(err)
 	}
