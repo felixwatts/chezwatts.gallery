@@ -79,8 +79,8 @@ func updateStatsLogDaily() {
 
 func updateStatsLog() {
 	log.Println("1")
-	hitCountModifyLock.Lock()
-	defer hitCountModifyLock.Unlock()
+	// hitCountModifyLock.Lock()
+	// defer hitCountModifyLock.Unlock()
 
 	records := make([][]string, 0)
 
