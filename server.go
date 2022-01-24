@@ -78,32 +78,22 @@ func updateStatsLogDaily() {
 }
 
 func updateStatsLog() {
-	log.Println("1")
-	// hitCountModifyLock.Lock()
-	// defer hitCountModifyLock.Unlock()
-
 	records := make([][]string, 0)
 
 	filename := fileSystemRoot + statsLogFilename
 
-	log.Println("2")
 	f, err := os.Open(filename)
 
-	log.Println("3")
 	if err != nil {
-		log.Println("4")
 		if os.IsNotExist(err) {
-			log.Println("5")
 			// if stats log file doesn't exist then
 			// records is minimal header row and no record rows
 			headerRow := []string{"Date"}
 			records = append(records, headerRow)
 		} else {
-			log.Println("6")
 			log.Fatal(err)
 		}
 	} else {
-		log.Println("7")
 		// if stats log file exists
 		defer f.Close()
 
@@ -117,19 +107,15 @@ func updateStatsLog() {
 		}
 	}
 
-	log.Println("8")
-
 	// create new empty record with current date
 	headerRow := records[0]
 	numCols := len(headerRow)
 	newRecord := make([]string, numCols)
 	newRecord[0] = fmt.Sprint(time.Now().Date())
 
-	log.Println("9")
 	// for each gallery in stats
 	stats := getStatsPageViewModel()
 
-	log.Println("10")
 	for _, gallery := range stats.PageHitCounts {
 
 		columnIndex := indexOf(gallery.Page, headerRow)
@@ -156,24 +142,18 @@ func updateStatsLog() {
 		newRecord[columnIndex] = fmt.Sprint(gallery.HitCount)
 	}
 
-	log.Println("11")
-
 	records = append(records, newRecord)
 
 	// overwrite file
 	f.Close()
 	f, err = os.Create(filename)
 	if err != nil {
-		log.Println("12")
 		log.Fatal(err)
 	}
-	log.Println("13")
 	defer f.Close()
 	writer := csv.NewWriter(f)
 	err = writer.WriteAll(records)
-	log.Println("14")
 	if err != nil {
-		log.Println("15")
 		log.Fatal(err)
 	}
 }
