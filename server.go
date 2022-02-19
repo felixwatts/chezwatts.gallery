@@ -12,6 +12,7 @@ import (
 	"path"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -19,7 +20,7 @@ import (
 )
 
 const portHttp = 8200
-const fileSystemRoot = "/home/ubuntu/data/chezwatts.gallery/"
+const fileSystemRoot = "/home/felix/code/chezwatts.gallery/"
 const statsLogFilename = "stats_log.csv"
 const statsFilename = "stats.csv"
 const statsTemplateFilename = "stats.csv.tmpl"
@@ -202,12 +203,19 @@ func restoreStats() {
 
 	for _, row := range records {
 		page := row[0]
+		if page == "total" {
+			continue
+		}
 		count, err := strconv.Atoi(row[1])
 		if err != nil {
 			panic(err)
 		}
-		hitCountByPage[page] = count
+		increaseHitCount(page, count)
 	}
+}
+
+func santitisePageName(page string) string {
+	return strings.Trim(page, "/")
 }
 
 type galleryViewModel struct {
@@ -258,7 +266,7 @@ func galleryHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	incrementHitCount(gallery)
+	increaseHitCount(gallery, 1)
 
 	g := galleryViewModel{
 		Galleries: getGalleries(),
@@ -287,7 +295,7 @@ func getBlurb(filename string) template.HTML {
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
-	incrementHitCount("index")
+	increaseHitCount("index", 1)
 
 	vm := indexViewModel{
 		Galleries: getGalleries(),
@@ -372,16 +380,15 @@ type statsPageViewModel struct {
 	PageHitCounts []pageHitCountViewModel
 }
 
-func incrementHitCount(page string) {
+func increaseHitCount(page string, amount int) {
 	hitCountModifyLock.Lock()
 	defer saveStats()
 	defer hitCountModifyLock.Unlock()
 
-	hitCount := hitCountByPage[page]
-	hitCountByPage[page] = hitCount + 1
+	page = santitisePageName(page)
 
-	totalHitCount := hitCountByPage["total"]
-	hitCountByPage["total"] = totalHitCount + 1
+	hitCountByPage[page] += amount
+	hitCountByPage["total"] += amount
 }
 
 func getStatsPageViewModel() statsPageViewModel {
