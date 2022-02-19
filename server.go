@@ -20,7 +20,7 @@ import (
 )
 
 const portHttp = 8200
-const fileSystemRoot = "/home/felix/code/chezwatts.gallery/"
+const fileSystemRoot = "/home/ubuntu/data/chezwatts.gallery/"
 const statsLogFilename = "stats_log.csv"
 const statsFilename = "stats.csv"
 const statsTemplateFilename = "stats.csv.tmpl"
