@@ -19,7 +19,7 @@ import (
 )
 
 const portHttp = 8200
-const fileSystemRoot = "/home/ubuntu/data/chezwatts.gallery/"
+const fileSystemRoot = "/home/felix/code/chezwatts.gallery/"
 const statsLogFilename = "stats_log.csv"
 const statsFilename = "stats.csv"
 const statsTemplateFilename = "stats.csv.tmpl"
@@ -303,6 +303,13 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getGalleryExists(gallery string) bool {
+	// Even though /test-gallery/ (as opposed to /test-gallery) will work as a gallery
+	// request, we don't want to serve it or record stats for it as it leads to
+	// duplicate entries in the stats.
+	if gallery[len(gallery)-1] == '/' {
+		return false
+	}
+
 	dir := path.Join(fileSystemRoot+"galleries", gallery)
 
 	_, err := os.Stat(dir)
