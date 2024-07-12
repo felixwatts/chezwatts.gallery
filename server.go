@@ -20,7 +20,9 @@ import (
 )
 
 const portHttp = 8200
-const fileSystemRoot = "/home/ubuntu/data/chezwatts.gallery/"
+const fileSystemRoot = "/home/felix/code/chezwatts.gallery/"
+const contentRoot = fileSystemRoot + "content/"
+const galleriesRoot = contentRoot + "galleries/"
 const statsLogFilename = "stats_log.csv"
 const statsFilename = "stats.csv"
 const statsTemplateFilename = "stats.csv.tmpl"
@@ -41,7 +43,7 @@ func main() {
 	httpMux.HandleFunc("/", indexHandler)
 	httpMux.HandleFunc("/gallery/", galleryHandler)
 	httpMux.HandleFunc("/stats", statsHandler)
-	httpMux.Handle("/galleries/", http.StripPrefix("/galleries/", http.FileServer(http.Dir(fileSystemRoot+"galleries"))))
+	httpMux.Handle("/galleries/", http.StripPrefix("/galleries/", http.FileServer(http.Dir(galleriesRoot))))
 	httpMux.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir(fileSystemRoot+"js"))))
 	httpMux.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir(fileSystemRoot+"css"))))
 	httpMux.Handle("/img/", http.StripPrefix("/img/", http.FileServer(http.Dir(fileSystemRoot+"img"))))
@@ -254,7 +256,7 @@ func galleryHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Println(err)
-		http.Redirect(w, r, "/", 302)
+		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
 
@@ -262,7 +264,7 @@ func galleryHandler(w http.ResponseWriter, r *http.Request) {
 
 	if !exists {
 		log.Println("Invalid request ignored.")
-		http.Redirect(w, r, "/", 302)
+		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
 
@@ -278,7 +280,7 @@ func galleryHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getGalleryBlurb(gallery string) template.HTML {
-	filename := fmt.Sprintf(fileSystemRoot+"galleries/%v/blurb.markdown", gallery)
+	filename := fmt.Sprintf(galleriesRoot+"%v/blurb.markdown", gallery)
 	return getBlurb(filename)
 }
 
@@ -299,7 +301,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	vm := indexViewModel{
 		Galleries: getGalleries(),
-		About:     getBlurb(fileSystemRoot + "about.markdown"),
+		About:     getBlurb(contentRoot + "about.markdown"),
 	}
 
 	renderTemplate("index", vm, w)
@@ -311,19 +313,15 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getGalleryExists(gallery string) bool {
-	dir := path.Join(fileSystemRoot+"galleries", gallery)
+	dir := path.Join(galleriesRoot, gallery)
 
 	_, err := os.Stat(dir)
-	if os.IsNotExist(err) {
-		return false
-	}
-
-	return true
+	return !os.IsNotExist(err)
 }
 
 func getGalleries() []galleryLinkViewModel {
 	result := make([]galleryLinkViewModel, 0)
-	infos, err := ioutil.ReadDir(fileSystemRoot + "galleries")
+	infos, err := ioutil.ReadDir(galleriesRoot)
 	if err != nil {
 		log.Println(err)
 		return result
@@ -347,7 +345,7 @@ func getGalleries() []galleryLinkViewModel {
 func getImages(gallery string) []string {
 
 	result := make([]string, 0)
-	dir := path.Join(fileSystemRoot+"galleries", gallery)
+	dir := path.Join(galleriesRoot, gallery)
 	infos, err := ioutil.ReadDir(dir)
 	if err != nil {
 		log.Println(err)
