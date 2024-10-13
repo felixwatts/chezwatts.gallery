@@ -245,10 +245,6 @@ func statsLogHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, fileSystemRoot+statsLogFilename)
 }
 
-func defaultHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/", http.StatusFound)
-}
-
 func galleryHandler(w http.ResponseWriter, r *http.Request) {
 
 	gallery, err := url.QueryUnescape(r.RequestURI[9:])
