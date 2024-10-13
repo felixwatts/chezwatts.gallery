@@ -20,7 +20,7 @@ import (
 )
 
 const portHttp = 8200
-const fileSystemRoot = "/Users/felixwatts/code/chezwatts.gallery/"
+const fileSystemRoot = "/home/ubuntu/data/chezwatts.gallery/"
 const contentRoot = fileSystemRoot + "content/"
 const galleriesRoot = contentRoot + "galleries/"
 const statsLogFilename = "stats_log.csv"
@@ -167,18 +167,7 @@ func saveStats() {
 
 	vm := getStatsPageViewModel()
 
-	// templateFiles := []string{
-	// 	fileSystemRoot + "page.html",
-	// 	fileSystemRoot + tmpl + ".html",
-	// }
-
-	ts := template.Must(template.ParseFiles(fileSystemRoot + "stats.csv.tmpl"))
-
-	// err := ts.ExecuteTemplate(w, "page.html", model)
-
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// }
+	ts := template.Must(template.ParseFiles(fileSystemRoot + statsTemplateFilename))
 
 	err = ts.Execute(f, vm)
 	if err != nil {
