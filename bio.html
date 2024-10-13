@@ -1,18 +1,11 @@
 {{ define "content" }}
     <div class="col-md-6">
         <div class="row" style="padding: 16px;">
-            {{.About}} 
+            {{.Content}} 
         </div>
     </div>
     <div class="col-md-6">
         <div class="row" style="padding: 16px;">
-            <h2>Rooms</h2>
-            {{range .Galleries}}
-            <a href="/gallery/{{.Name}}">
-                {{.Name}}
-            </a>
-        <br>
-            {{end}}   
         </div>
     </div>
 {{ end }}
