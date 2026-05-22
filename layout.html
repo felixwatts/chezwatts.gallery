@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chez Watts Gallery</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+    <link href="/css/site.css" rel="stylesheet">
+</head>
+<body>
+
+
+<div>
+    <nav class="w3-bar w3-light-grey w3-border-bottom" role="navigation">
+        <a href="/" class="w3-bar-item w3-button site-brand">Chez Watts</a>
+        <span class="w3-bar-item w3-hide-small w3-hide-medium site-tagline">(Mostly) Portraits, Life Drawings and Paintings</span>
+        <span class="w3-bar-item w3-right w3-hide-small site-nav-extra">
+            <script type="text/javascript">
+            {
+                coded = "RG0PCY668@QDYzx.RhD"
+                key = "69rZeQoNMEl5DBzF3Xcs1nv0KhpSdxbAjPag2R8w7TftGVOkyuJL4YHmqiCWUI"
+                shift = coded.length
+                link = ""
+                for (i = 0; i < coded.length; i++) {
+                    if (key.indexOf(coded.charAt(i)) == -1) {
+                        ltr = coded.charAt(i)
+                        link += (ltr)
+                    } else {
+                        ltr = (key.indexOf(coded.charAt(i)) - shift + key.length) % key.length
+                        link += (key.charAt(ltr))
+                    }
+                }
+                document.write("Contact: <a href='mailto:" + link + "'>" + link + "</a>")
+            }
+            </script>
+            <noscript>Sorry, you need Javascript on to email me.</noscript>
+        </span>
+        <button type="button" class="w3-bar-item w3-button w3-right w3-hide-large w3-hide-medium"
+            onclick="var m=document.getElementById('site-nav-menu');m.className=m.className.indexOf('w3-show')==-1?'w3-bar-block w3-light-grey w3-show':'w3-bar-block w3-light-grey w3-hide';"
+            aria-controls="site-nav-menu">&#9776;</button>
+        <div id="site-nav-menu" class="w3-bar-block w3-light-grey w3-hide w3-hide-large w3-hide-medium">
+            <span class="w3-bar-item site-nav-extra">
+                <script type="text/javascript">
+                {
+                    coded = "RG0PCY668@QDYzx.RhD"
+                    key = "69rZeQoNMEl5DBzF3Xcs1nv0KhpSdxbAjPag2R8w7TftGVOkyuJL4YHmqiCWUI"
+                    shift = coded.length
+                    link = ""
+                    for (i = 0; i < coded.length; i++) {
+                        if (key.indexOf(coded.charAt(i)) == -1) {
+                            ltr = coded.charAt(i)
+                            link += (ltr)
+                        } else {
+                            ltr = (key.indexOf(coded.charAt(i)) - shift + key.length) % key.length
+                            link += (key.charAt(ltr))
+                        }
+                    }
+                    document.write("Contact: <a href='mailto:" + link + "'>" + link + "</a>")
+                }
+                </script>
+                <noscript>Sorry, you need Javascript on to email me.</noscript>
+            </span>
+        </div>
+    </nav>
+
+    {{block "content" .}}{{end}}
+</div>
+
+<footer class="footer">
+    <p>Copyright &copy; Chez Watts <time datetime="2015">2015</time></p>
+</footer>
+
+{{block "scripts" .}}{{end}}
+
+</body>
+</html>
