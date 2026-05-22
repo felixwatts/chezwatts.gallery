@@ -1,14 +1,14 @@
-{{ define "content" }}
-	<table>
-		<tr>
-			<td>Page</td>
-			<td>Visits</td>
-		</tr>
-		{{range .PageHitCounts}}
-		<tr>
-			<td>{{.Page}}</td>
-			<td>{{.HitCount}}</td>
-		</tr>	
-		{{end}}
-	</table>
-{{ end }}
+{{define "content"}}
+<table class="w3-table w3-striped w3-bordered w3-margin-top">
+    <tr>
+        <th>Page</th>
+        <th>Visits</th>
+    </tr>
+    {{range .PageHitCounts}}
+    <tr>
+        <td>{{.Page}}</td>
+        <td>{{.HitCount}}</td>
+    </tr>
+    {{end}}
+</table>
+{{end}}

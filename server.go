@@ -21,7 +21,7 @@ import (
 )
 
 const portHttp = 8200
-const fileSystemRoot = "/home/chez/chezwatts.gallery/"
+const fileSystemRoot = "./"
 const contentRoot = fileSystemRoot + "content/"
 const galleriesRoot = contentRoot + "galleries/"
 const statsLogFilename = "stats_log.csv"
@@ -42,7 +42,7 @@ func main() {
 
 	httpMux.HandleFunc("/favicon.ico", faviconHandler)
 	httpMux.HandleFunc("/", indexHandler)
-	httpMux.HandleFunc("/bio", bioHandler)
+	// httpMux.HandleFunc("/bio", bioHandler)
 	httpMux.HandleFunc("/gallery/", galleryHandler)
 	httpMux.HandleFunc("/stats", statsHandler)
 	httpMux.Handle("/galleries/", http.StripPrefix("/galleries/", http.FileServer(http.Dir(galleriesRoot))))
@@ -68,9 +68,8 @@ func templateRoot() string {
 
 func init() {
 	root := templateRoot()
-	for _, tmpl := range []string{"index", "gallery", "stats"} {
-		filename := root + tmpl + ".html"
-		t, err := template.ParseFiles(filename)
+	for _, tmpl := range []string{"index", "gallery", "stats", "bio"} {
+		t, err := template.ParseFiles(root+"layout.html", root+tmpl+".html")
 		if err != nil {
 			panic(err)
 		}
@@ -267,16 +266,16 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func bioHandler(w http.ResponseWriter, r *http.Request) {
+// func bioHandler(w http.ResponseWriter, r *http.Request) {
 
-	increaseHitCount("bio", 1)
+// 	increaseHitCount("bio", 1)
 
-	vm := bioViewModel{
-		Content: getBlurb(contentRoot + "bio.markdown"),
-	}
+// 	vm := bioViewModel{
+// 		Content: getBlurb(contentRoot + "bio.markdown"),
+// 	}
 
-	renderTemplate("bio", vm, w)
-}
+// 	renderTemplate("bio", vm, w)
+// }
 
 func galleryHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -398,7 +397,7 @@ func getImages(gallery string) []string {
 
 func renderTemplate(tmpl string, model interface{}, w http.ResponseWriter) {
 
-	err := templates[tmpl].Execute(w, model)
+	err := templates[tmpl].ExecuteTemplate(w, "layout.html", model)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

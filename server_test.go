@@ -9,7 +9,7 @@ import (
 )
 
 func TestGalleryTemplateVirtualSlideshow(t *testing.T) {
-	tmpl, err := template.ParseFiles("gallery.html")
+	tmpl, err := template.ParseFiles("layout.html", "gallery.html")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -21,7 +21,7 @@ func TestGalleryTemplateVirtualSlideshow(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, galleryViewModel{
+	err = tmpl.ExecuteTemplate(&buf, "layout.html", galleryViewModel{
 		ImagesJSON: template.JS(imagesJSON),
 		Blurb:      template.HTML("<p>test</p>"),
 	})
@@ -47,5 +47,14 @@ func TestGalleryTemplateVirtualSlideshow(t *testing.T) {
 	}
 	if strings.Contains(out, "jssor") {
 		t.Error("jssor references should be removed from gallery template")
+	}
+	if strings.Contains(out, "bootstrap") {
+		t.Error("bootstrap references should be removed")
+	}
+	if strings.Contains(out, "jquery") {
+		t.Error("jquery references should be removed")
+	}
+	if !strings.Contains(out, "w3.css") {
+		t.Error("missing w3.css stylesheet")
 	}
 }
