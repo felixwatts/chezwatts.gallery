@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -20,7 +21,7 @@ import (
 )
 
 const portHttp = 8200
-const fileSystemRoot = "/home/ubuntu/data/chezwatts.gallery/"
+const fileSystemRoot = "/home/felix/code/chezwatts.gallery/" //"/home/ubuntu/data/chezwatts.gallery/"
 const contentRoot = fileSystemRoot + "content/"
 const galleriesRoot = contentRoot + "galleries/"
 const statsLogFilename = "stats_log.csv"
@@ -54,9 +55,20 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(portHttp), logAndDelegate(httpMux)))
 }
 
+func templateRoot() string {
+	if _, err := os.Stat("gallery.html"); err == nil {
+		wd, err := os.Getwd()
+		if err == nil {
+			return wd + string(os.PathSeparator)
+		}
+	}
+	return fileSystemRoot
+}
+
 func init() {
+	root := templateRoot()
 	for _, tmpl := range []string{"index", "gallery", "stats"} {
-		filename := fileSystemRoot + tmpl + ".html"
+		filename := root + tmpl + ".html"
 		t, err := template.ParseFiles(filename)
 		if err != nil {
 			panic(err)
@@ -65,7 +77,7 @@ func init() {
 		templates[tmpl] = t
 	}
 
-	t, err := template.ParseFiles(fileSystemRoot + statsTemplateFilename)
+	t, err := template.ParseFiles(root + statsTemplateFilename)
 	if err != nil {
 		panic(err)
 	}
@@ -221,9 +233,9 @@ func santitisePageName(page string) string {
 }
 
 type galleryViewModel struct {
-	Galleries []galleryLinkViewModel
-	Images    []string
-	Blurb     template.HTML
+	Galleries  []galleryLinkViewModel
+	ImagesJSON template.JS
+	Blurb      template.HTML
 }
 
 type indexViewModel struct {
@@ -270,10 +282,17 @@ func galleryHandler(w http.ResponseWriter, r *http.Request) {
 
 	increaseHitCount(gallery, 1)
 
+	images := getImages(gallery)
+	imagesJSON, err := json.Marshal(images)
+	if err != nil {
+		log.Println(err)
+		imagesJSON = []byte("[]")
+	}
+
 	g := galleryViewModel{
-		Galleries: getGalleries(),
-		Images:    getImages(gallery),
-		Blurb:     getGalleryBlurb(gallery),
+		Galleries:  getGalleries(),
+		ImagesJSON: template.JS(imagesJSON),
+		Blurb:      getGalleryBlurb(gallery),
 	}
 
 	renderTemplate("gallery", g, w)
