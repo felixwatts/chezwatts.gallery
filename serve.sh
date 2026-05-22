@@ -1,2 +1,3 @@
 #!/bin/bash
-GOCACHE=/home/ubuntu/go GOPATH=/home/ubuntu/go  go run server.go &> log.txt
+cd /home/chez/chezwatts.gallery
+go run server.go
