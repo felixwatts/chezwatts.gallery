@@ -21,13 +21,14 @@ import (
 )
 
 const portHttp = 8200
-const fileSystemRoot = "/home/felix/code/chezwatts.gallery/" //"/home/ubuntu/data/chezwatts.gallery/"
+const fileSystemRoot = "/home/ubuntu/data/chezwatts.gallery/"
 const contentRoot = fileSystemRoot + "content/"
 const galleriesRoot = contentRoot + "galleries/"
 const statsLogFilename = "stats_log.csv"
 const statsFilename = "stats.csv"
 const statsTemplateFilename = "stats.csv.tmpl"
 
+var templates = make(map[string]*template.Template)
 var hitCountByPage = make(map[string]int)
 var hitCountModifyLock = &sync.Mutex{}
 
@@ -197,10 +198,7 @@ func saveStats() {
 	defer f.Close()
 
 	vm := getStatsPageViewModel()
-
-	ts := template.Must(template.ParseFiles(fileSystemRoot + statsTemplateFilename))
-
-	err = ts.Execute(f, vm)
+	err = templates["stats_csv"].Execute(f, vm)
 	if err != nil {
 		panic(err)
 	}
@@ -235,6 +233,10 @@ func santitisePageName(page string) string {
 	return strings.Trim(page, "/")
 }
 
+type bioViewModel struct {
+	Content template.HTML
+}
+
 type galleryViewModel struct {
 	Galleries  []galleryLinkViewModel
 	ImagesJSON template.JS
@@ -244,10 +246,6 @@ type galleryViewModel struct {
 type indexViewModel struct {
 	Galleries []galleryLinkViewModel
 	About     template.HTML
-}
-
-type bioViewModel struct {
-	Content template.HTML
 }
 
 type galleryLinkViewModel struct {
@@ -263,6 +261,21 @@ func statsLogHandler(w http.ResponseWriter, r *http.Request) {
 	hitCountModifyLock.Lock()
 	defer hitCountModifyLock.Unlock()
 	http.ServeFile(w, r, fileSystemRoot+statsLogFilename)
+}
+
+func defaultHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func bioHandler(w http.ResponseWriter, r *http.Request) {
+
+	increaseHitCount("bio", 1)
+
+	vm := bioViewModel{
+		Content: getBlurb(contentRoot + "bio.markdown"),
+	}
+
+	renderTemplate("bio", vm, w)
 }
 
 func galleryHandler(w http.ResponseWriter, r *http.Request) {
@@ -329,17 +342,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	renderTemplate("index", vm, w)
 }
 
-func bioHandler(w http.ResponseWriter, r *http.Request) {
-
-	increaseHitCount("bio", 1)
-
-	vm := bioViewModel{
-		Content: getBlurb(contentRoot + "bio.markdown"),
-	}
-
-	renderTemplate("bio", vm, w)
-}
-
 func statsHandler(w http.ResponseWriter, r *http.Request) {
 	vm := getStatsPageViewModel()
 	renderTemplate("stats", vm, w)
@@ -376,6 +378,7 @@ func getGalleries() []galleryLinkViewModel {
 }
 
 func getImages(gallery string) []string {
+
 	result := make([]string, 0)
 	dir := path.Join(galleriesRoot, gallery)
 	infos, err := ioutil.ReadDir(dir)
@@ -394,15 +397,8 @@ func getImages(gallery string) []string {
 }
 
 func renderTemplate(tmpl string, model interface{}, w http.ResponseWriter) {
-	templateFiles := []string{
-		fileSystemRoot + "page.html",
-		fileSystemRoot + tmpl + ".html",
-	}
 
-	ts := template.Must(template.ParseFiles(templateFiles...))
-
-	err := ts.ExecuteTemplate(w, "page.html", model)
-
+	err := templates[tmpl].Execute(w, model)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
