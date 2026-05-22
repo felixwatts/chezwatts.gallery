@@ -67,7 +67,7 @@ func templateRoot() string {
 
 func init() {
 	root := templateRoot()
-	for _, tmpl := range []string{"index", "gallery", "stats", "bio"} {
+	for _, tmpl := range []string{"index", "gallery", "stats"} {
 		t, err := template.ParseFiles(root+"layout.html", root+tmpl+".html")
 		if err != nil {
 			panic(err)
