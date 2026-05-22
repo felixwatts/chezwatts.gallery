@@ -42,7 +42,6 @@ func main() {
 
 	httpMux.HandleFunc("/favicon.ico", faviconHandler)
 	httpMux.HandleFunc("/", indexHandler)
-	// httpMux.HandleFunc("/bio", bioHandler)
 	httpMux.HandleFunc("/gallery/", galleryHandler)
 	httpMux.HandleFunc("/stats", statsHandler)
 	httpMux.Handle("/galleries/", http.StripPrefix("/galleries/", http.FileServer(http.Dir(galleriesRoot))))
@@ -261,21 +260,6 @@ func statsLogHandler(w http.ResponseWriter, r *http.Request) {
 	defer hitCountModifyLock.Unlock()
 	http.ServeFile(w, r, fileSystemRoot+statsLogFilename)
 }
-
-func defaultHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/", http.StatusFound)
-}
-
-// func bioHandler(w http.ResponseWriter, r *http.Request) {
-
-// 	increaseHitCount("bio", 1)
-
-// 	vm := bioViewModel{
-// 		Content: getBlurb(contentRoot + "bio.markdown"),
-// 	}
-
-// 	renderTemplate("bio", vm, w)
-// }
 
 func galleryHandler(w http.ResponseWriter, r *http.Request) {
 
