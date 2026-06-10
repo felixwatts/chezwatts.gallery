@@ -68,3 +68,32 @@ body {
 .gallery-slideshow__layer--active {
     opacity: 1;
 }
+
+.catalog-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 993px) {
+    .catalog-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+.catalog-item {
+    margin: 0;
+}
+
+.catalog-item__image {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.catalog-item__caption {
+    margin-top: 0.5rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #555;
+}

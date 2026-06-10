@@ -43,6 +43,8 @@ func main() {
 	httpMux.HandleFunc("/favicon.ico", faviconHandler)
 	httpMux.HandleFunc("/", indexHandler)
 	httpMux.HandleFunc("/gallery/", galleryHandler)
+	httpMux.HandleFunc("/catalog/", catalogHandler)
+	httpMux.HandleFunc("/catalogIndex", catalogIndexHandler)
 	httpMux.HandleFunc("/stats", statsHandler)
 	httpMux.Handle("/galleries/", http.StripPrefix("/galleries/", http.FileServer(http.Dir(galleriesRoot))))
 	httpMux.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir(fileSystemRoot+"js"))))
@@ -67,7 +69,7 @@ func templateRoot() string {
 
 func init() {
 	root := templateRoot()
-	for _, tmpl := range []string{"index", "gallery", "stats"} {
+	for _, tmpl := range []string{"index", "gallery", "catalog", "catalogIndex", "stats"} {
 		t, err := template.ParseFiles(root+"layout.html", root+tmpl+".html")
 		if err != nil {
 			panic(err)
@@ -251,6 +253,20 @@ type galleryLinkViewModel struct {
 	PreviewImage string
 }
 
+type catalogImageViewModel struct {
+	URL      string
+	Filename string
+}
+
+type catalogViewModel struct {
+	RoomName string
+	Images   []catalogImageViewModel
+}
+
+type catalogIndexViewModel struct {
+	Galleries []galleryLinkViewModel
+}
+
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
@@ -295,6 +311,43 @@ func galleryHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	renderTemplate("gallery", g, w)
+}
+
+func catalogHandler(w http.ResponseWriter, r *http.Request) {
+
+	room, err := url.QueryUnescape(r.RequestURI[9:])
+
+	if err != nil {
+		log.Println(err)
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+
+	if !getGalleryExists(room) {
+		log.Println("Invalid request ignored.")
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+
+	increaseHitCount("catalog/"+room, 1)
+
+	vm := catalogViewModel{
+		RoomName: room,
+		Images:   getCatalogImages(room),
+	}
+
+	renderTemplate("catalog", vm, w)
+}
+
+func catalogIndexHandler(w http.ResponseWriter, r *http.Request) {
+
+	increaseHitCount("catalogIndex", 1)
+
+	vm := catalogIndexViewModel{
+		Galleries: getGalleries(),
+	}
+
+	renderTemplate("catalogIndex", vm, w)
 }
 
 func getGalleryBlurb(gallery string) template.HTML {
@@ -373,6 +426,28 @@ func getImages(gallery string) []string {
 	for _, info := range infos {
 		if path.Base(info.Name()) != "preview.jpg" && path.Ext(info.Name()) == ".jpg" || path.Ext(info.Name()) == ".JPG" {
 			result = append(result, fmt.Sprintf("/galleries/%v/%v", gallery, info.Name()))
+		}
+	}
+
+	return result
+}
+
+func getCatalogImages(gallery string) []catalogImageViewModel {
+
+	result := make([]catalogImageViewModel, 0)
+	dir := path.Join(galleriesRoot, gallery)
+	infos, err := ioutil.ReadDir(dir)
+	if err != nil {
+		log.Println(err)
+		return result
+	}
+
+	for _, info := range infos {
+		if path.Base(info.Name()) != "preview.jpg" && path.Ext(info.Name()) == ".jpg" || path.Ext(info.Name()) == ".JPG" {
+			result = append(result, catalogImageViewModel{
+				URL:      fmt.Sprintf("/galleries/%v/%v", gallery, info.Name()),
+				Filename: strings.TrimSuffix(info.Name(), path.Ext(info.Name())),
+			})
 		}
 	}
 
