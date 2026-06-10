@@ -1,0 +1,15 @@
+{{define "content"}}
+<h1 class="w3-container"><a href="/catalogIndex">Catalog</a> > {{.RoomName}}</h1>
+<div class="w3-padding-16">
+    <div class="catalog-grid">
+        {{range .Images}}
+        <figure class="catalog-item">
+            <a href="{{.URL}}" target="_blank" rel="noopener noreferrer">
+                <img src="{{.URL}}" alt="{{.Filename}}" class="catalog-item__image" loading="lazy">
+            </a>
+            <figcaption class="catalog-item__caption">{{.Filename}}</figcaption>
+        </figure>
+        {{end}}
+    </div>
+</div>
+{{end}}

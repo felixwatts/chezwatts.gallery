@@ -1,0 +1,8 @@
+{{define "content"}}
+<div class="w3-padding-16">
+    <h2>Catalog</h2>
+    {{range .Galleries}}
+    <a href="/catalog/{{.Name}}">{{.Name}}</a><br>
+    {{end}}
+</div>
+{{end}}
